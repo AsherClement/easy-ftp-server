@@ -1,0 +1,85 @@
+#! /bin/bash
+PS3="Select the operation: "
+
+select opt in InstallVsftpd AddFirewallRule AddAdminUser LocalUser DoConfigurations EnableFTPservice quit; do
+  case $opt in
+    AddFirewallRule)
+      sudo firewall-cmd --zone=public --permanent --add-port=21/tcp
+      sudo firewall-cmd --zone=public --permanent --add-port=20/tcp
+      sudo firewall-cmd --zone=public --permanent --add-service=ftp
+      sudo firewall-cmd --reload
+      ;;
+    InstallVsftpd)
+      sudo yum install vsftpd* -y
+      ;;
+    AddAdminUser)
+      read -p "Enter Admin User name : " username
+      read -p "Enter Root Directory name : " rtd
+      read -p "Enter Sub Directories 1: " r1
+      read -p "Enter Sub Directories 2: " r2
+      read -p "Enter Sub Directories 3: " r3
+      read -p "Enter Sub Directories 4: " r4
+      sudo mkdir -p /home/$username/$rtd 
+      sudo useradd -m -d /home/$username/$rtd $username
+      sudo passwd $username
+      sudo echo $username >> /etc/vsftpd/user_list
+      sudo mkdir -p /home/$username/$rtd
+      sudo chmod -R 777 /home/$username/$rtd
+      sudo chown $username: /home/$username/$rtd
+      sudo mkdir -p /home/$username/$rtd/$r1
+      sudo mkdir -p /home/$username/$rtd/$r2
+      sudo mkdir -p /home/$username/$rtd/$r3
+      sudo mkdir -p /home/$username/$rtd/$r4
+      sudo touch /etc/vsftpd/vsftpd.chroot_list
+      sudo chmod -R 777 /home/$username/$rtd/$r1
+      sudo chmod -R 777 /home/$username/$rtd/$r2
+      sudo chmod -R 777 /home/$username/$rtd/$r3
+      sudo chmod -R 777 /home/$username/$rtd/$r4
+      sudo chown $username: /home/$username/$rtd/$r1
+      sudo chown $username: /home/$username/$rtd/$r2
+      sudo chown $username: /home/$username/$rtd/$r3
+      sudo chown $username: /home/$username/$rtd/$r4
+      sudo echo $username >> /etc/vsftpd/vsftpd.chroot_list
+      ;;
+    LocalUser)
+      read -p "Enter Local User1: " u1
+      read -p "Enter Local User2: " u2
+      read -p "Enter Local User3: " u3
+#      read -p "Enter Local User4: " u4
+      sudo useradd -d /home/$username/$rtd/$r1 $u1
+      sudo passwd $u1 
+      sudo echo $u1 >> /etc/vsftpd/user_list
+      sudo echo $u1 >> /etc/vsftpd/vsftpd.chroot_list
+      sudo useradd -d /home/$username/$rtd/$r2 $u2 
+      sudo passwd $u2
+      sudo echo $u2 >> /etc/vsftpd/user_list
+      sudo echo $u2 >> /etc/vsftpd/vsftpd.chroot_list
+      sudo useradd -d /home/$username/$rtd/$r3 $u3 
+      sudo passwd $u3
+      sudo echo $u3 >> /etc/vsftpd/user_list
+      sudo echo $u3 >> /etc/vsftpd/vsftpd.chroot_list
+#      sudo useradd -d /home/$username/$rtd/$r4 $u4 
+      sudo echo $u1 >> /etc/vsftpd/user_list
+      sudo echo $u2 >> /etc/vsftpd/user_list
+      sudo echo $u3 >> /etc/vsftpd/user_list
+#      sudo echo $u4 >> /etc/vsftpd/user_list
+      ;;
+    DoConfigurations)
+      cd /etc/vsftpd/
+      sudo cp /etc/vsftpd/vsftpd.conf /etc/vsftpd/vsftpd.conf.backup
+      sudo touch /etc/vsftpd/vsftpd.conf
+      #chmod u=rw /etc/vsftpd/vsftpd.conf
+      sudo echo -e "anonymous_enable=NO\nchroot_list_file=/etc/vsftpd/vsftpd.chroot_list\nlocal_enable=YES\nwrite_enable=YES\nlocal_umask=022\nallow_writeable_chroot=YES\nuserlist_file=/etc/vsftpd/user_list\nuserlist_enable=YES\ndirmessage_enable=YES\npam_service_name=vsftpd\nxferlog_enable=YES\nchroot_local_user=YES\nxferlog_std_format=YES\nconnect_from_port_20=YES\nlisten_ipv6=YES\nuserlist_deny=NO\nlisten=NO"  > vsftpd.conf
+      sudo systemctl restart vsftpd
+      ;;
+    EnableFTPservice)
+      sudo systemctl enable vsftpd --now
+      ;;
+    quit)
+      break
+      ;;
+    *) 
+      echo "Invalid option $REPLY"
+      ;;
+  esac
+done
